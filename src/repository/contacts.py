@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, extract, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.contact import ContactModel
@@ -73,5 +73,17 @@ class ContactRepository:
     async def get_upcoming_birthdays(
         self, _start_date: date, _end_date: date
     ) -> list[ContactModel]:
-        result = await self.db.execute(select(ContactModel))
+        start_md = _start_date.month * 100 + _start_date.day
+        end_md = _end_date.month * 100 + _end_date.day
+        birthday_md = extract("month", ContactModel.birthday) * 100 + extract(
+            "day", ContactModel.birthday
+        )
+
+        if start_md <= end_md:
+            date_filter = and_(birthday_md >= start_md, birthday_md <= end_md)
+        else:
+            date_filter = or_(birthday_md >= start_md, birthday_md <= end_md)
+
+        stmt = select(ContactModel).where(date_filter)
+        result = await self.db.execute(stmt)
         return list(result.scalars().all())

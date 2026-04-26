@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repository.contacts import ContactRepository
@@ -28,6 +29,11 @@ class ContactService:
 
     async def update_contact(self, contact_id: int, body: ContactUpdate):
         contact = await self.repository.update_contact(contact_id, body)
+        if contact is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Contact not found",
+            )
         self.logger.info(
             f"Contact updated successfully: id={contact.id}, name={contact.name + ' ' + contact.surname}",
             title="ContactService",
@@ -36,6 +42,11 @@ class ContactService:
 
     async def remove_contact(self, contact_id: int):
         contact = await self.repository.remove_contact(contact_id)
+        if contact is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Contact not found",
+            )
         self.logger.info(
             f"Contact removed successfully: id={contact.id}, name={contact.name + ' ' + contact.surname}",
             title="ContactService",
